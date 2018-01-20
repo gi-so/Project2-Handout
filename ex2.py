@@ -5,7 +5,7 @@ ids = ["000000000","111111111"]
 
 import logic
 import numpy
-import search
+#import search
 import copy
 import itertools
 
@@ -27,6 +27,11 @@ def any_location(calibration_targets, targets, ships):
 
 class SpaceshipController:
 
+    brain_x = []
+    brain_y = []
+    brain_z = []
+    problem = ()
+
     @staticmethod
     def make_inst_on_ships(locations, inst_on_ships):
         tmp_lst = []
@@ -38,6 +43,17 @@ class SpaceshipController:
 
         return tuple(tmp_lst)
 
+    def add_to_brain(self,observation,ships):
+        for ship in ships:
+            if observation.get(ship) == 0:
+                global brain_x
+                global brain_y
+                global brain_z
+                brain_x.append(ship[1][0])
+                brain_y.append(ship[1][1])
+                brain_z.append(ship[1][2])
+
+
     "This class is a controller for a spaceship problem."
     def __init__(self, problem, num_of_transmitters):
        # TODO : COMPLETE BY STUDENTS
@@ -46,9 +62,9 @@ class SpaceshipController:
        self.problem = (problem[0], self.make_inst_on_ships(problem[6], problem[3]), tuple(problem[4].items()),
                        tuple(problem[5].items()), locations)
        print(self.problem)
-       search.Problem.__init__(self, self.problem)
+       #search.Problem.__init__(self, self.problem)
 
     def get_next_action(self, observation):
         # TODO : COMPLETE BY STUDENTS
         # get observation for the current state and return next action to apply (and None if no action is applicable)
-
+        add_to_brain(self,observation,problem [1])
