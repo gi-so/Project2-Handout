@@ -139,10 +139,7 @@ def best_next_target(ship, problemState):
 
 class SpaceshipController:
     "This class is a controller for a spaceship problem."
-
-    brain_x = []
-    brain_y = []
-    brain_z = []
+    space_kb = logic.PropKB()
     states = []
     state = ()
     move_back = None
@@ -155,9 +152,33 @@ class SpaceshipController:
         global states
         global move_back
         global prev_fit
+        global space_kb
+        space_kb = logic.PropKB()
         self.state= self.problem = (problem[0], self.make_inst_on_ships(problem[6], problem[3]), tuple(problem[4].items()),
                         tuple(problem[5].items()), locations)
         print(self.problem)
+        for ship in self.state[1]:
+            pos_str = 'P' + str(ship[1])
+            self.space_kb.tell(~logic.expr(pos_str))
+            pos_str = 'P' + str((ship[1][0] + 1, ship[1][1], ship[1][2]))
+            print(pos_str)
+            self.space_kb.tell(~logic.expr(pos_str))
+            pos_str = 'P' + str((ship[1][0] - 1, ship[1][1], ship[1][2]))
+            print(pos_str)
+            self.space_kb.tell(~logic.expr(pos_str))
+            print(pos_str)
+            pos_str = 'P' + str((ship[1][0], ship[1][1] + 1, ship[1][2]))
+            print(pos_str)
+            self.space_kb.tell(~logic.expr(pos_str))
+            pos_str = 'P' + str((ship[1][0], ship[1][1] - 1, ship[1][2]))
+            print(pos_str)
+            self.space_kb.tell(~logic.expr(pos_str))
+            pos_str = 'P' + str((ship[1][0], ship[1][1], ship[1][2] + 1))
+            print(pos_str)
+            self.space_kb.tell(~logic.expr(pos_str))
+            pos_str = 'P' + str((ship[1][0], ship[1][1], ship[1][2] - 1))
+            print(pos_str)
+            self.space_kb.tell(~logic.expr(pos_str))
 
         # search.Problem.__init__(self, self.problem)
 
@@ -209,7 +230,7 @@ class SpaceshipController:
     def get_next_action(self, observation):
         # TODO : COMPLETE BY STUDENTS
         # get observation for the current state and return next action to apply (and None if no action is applicable)
-        self.add_to_brain(observation, self.state[1])
+        #self.space_kb.tell()
         cleared = False
         #print(self.state)
         for prev_tar in self.problem[3]:
@@ -235,10 +256,25 @@ class SpaceshipController:
 
             for action in actions:
                 if observation.get(ship[0]) != -1:
-                    if observation.get(ship[0]) > 0:
-                        self.state = self.result(self.state, self.move_back)
-                        return self.move_back
+                    if observation.get(ship[0]) == 1:
+                        pos_str = 'P' + str(ship[1])
+                        self.space_kb.tell(~logic.expr(pos_str))
 
+                    elif observation.get(ship[0])==0:
+                        pos_str='P'+str(ship[1])
+                        self.space_kb.tell(~logic.expr(pos_str))
+                        pos_str='P'+str((ship[1][0]+1,ship[1][1],ship[1][2]))
+                        self.space_kb.tell(~logic.expr(pos_str))
+                        pos_str = 'P' + str((ship[1][0]-1, ship[1][1], ship[1][2]))
+                        self.space_kb.tell(~logic.expr(pos_str))
+                        pos_str = 'P' + str((ship[1][0], ship[1][1]+1, ship[1][2]))
+                        self.space_kb.tell(~logic.expr(pos_str))
+                        pos_str = 'P' + str((ship[1][0], ship[1][1]-1, ship[1][2]))
+                        self.space_kb.tell(~logic.expr(pos_str))
+                        pos_str = 'P' + str((ship[1][0], ship[1][1], ship[1][2]+1))
+                        self.space_kb.tell(~logic.expr(pos_str))
+                        pos_str = 'P' + str((ship[1][0], ship[1][1], ship[1][2]-1))
+                        self.space_kb.tell(~logic.expr(pos_str))
                     if action[0] == "use" and action [1] == ship[0]:
                         self.state = self.result(self.state, action)
                         self.states.append(self.state)
@@ -295,8 +331,24 @@ class SpaceshipController:
 
             return  next_action
         next_action = self.next_move_to_mission(mission, self.state)
-        self.state = self.result(self.state, next_action)
-        self.states.append(self.state)
+        if next_action is None:
+            return self.move_back
+        allow=logic.dpll_satisfiable(logic.to_cnf(logic.associate('&',self.space_kb.clauses + [logic.expr('P'+str(next_action[3]))])))
+        #print(allow)
+        tmp_state = self.result(self.state, next_action)
+        self.states.append(tmp_state)
+        while allow != False:
+            print('Achtung Laser')
+            print(allow)
+            next_action = self.next_move_to_mission(mission, self.state)
+            tmp_state = self.result(self.state, next_action)
+            self.states.append(tmp_state)
+            if len(self.states)>6:
+                self.states.clear()
+            allow = logic.dpll_satisfiable(
+                logic.to_cnf(logic.associate('&', self.space_kb.clauses + [logic.expr('P' + str(next_action[3]))])))
+            #print(allow)
+        self.state=tmp_state
         self.move_back = (next_action[0], next_action[1], next_action[3],next_action[2])
         return next_action
 
@@ -530,15 +582,7 @@ class SpaceshipController:
 
         return tuple(tmp_lst)
 
-    def add_to_brain(self,observation,ships):
-        for ship in ships:
-            if observation.get(ship) == 0:
-                self.brain_x.append(ship[1][0] + 1)
-                self.brain_y.append(ship[1][1] + 1)
-                self.brain_z.append(ship[1][2] + 1)
-                self.brain_x.append(ship[1][0] - 1)
-                self.brain_y.append(ship[1][1] - 1)
-                self.brain_z.append(ship[1][2] - 1)
+
 
     @staticmethod
     def check_for_use(a, b, c, d, e, state, target, tmp_lst_min):
@@ -546,12 +590,12 @@ class SpaceshipController:
             if state[c] < target[0][c]:
                 if tmp_lst_min[d] == ():
                     tmp_lst_min[d] = target
-                elif tmp_lst_min[d][c] < target[0][c]:
+                elif tmp_lst_min[d][0][c] < target[0][c]:
                     tmp_lst_min[d] = target
             elif state[c] > target[0][c]:
                 if tmp_lst_min[e] == ():
                     tmp_lst_min[e] = target
-                elif tmp_lst_min[e][c] > target[0][c]:
+                elif tmp_lst_min[e][0][c] > target[0][c]:
                     tmp_lst_min[e] = target
 
 
